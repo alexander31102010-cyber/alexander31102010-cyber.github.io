@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chief Coordinator — Dr. Mia Hellokitty</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --gold: #c9a84c;
+  --gold-bright: #f0d060;
+  --gold-dim: #8a6f2e;
+  --navy: #050c1a;
+  --navy-mid: #0a1628;
+  --navy-light: #0f2040;
+  --blue-glow: #1a4080;
+  --white: #e8edf5;
+  --gray: #6b7a90;
+  --danger: #c0392b;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--navy);
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+}
+
+/* ── CANVAS BACKGROUND ── */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── SCANLINES ── */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+}
+
+/* ── VIGNETTE ── */
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 40%,
+    rgba(5,12,26,0.7) 100%
+  );
+}
+
+/* ── WRAPPER ── */
+.app {
+  position: relative;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 64px;
+  background: linear-gradient(90deg,
+    rgba(5,12,26,0.95) 0%,
+    rgba(10,22,40,0.90) 50%,
+    rgba(5,12,26,0.95) 100%
+  );
+  border-bottom: 1px solid rgba(201,168,76,0.3);
+  backdrop-filter: blur(20px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.badge-hex {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-hex svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.badge-hex span {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  color: var(--gold);
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.5px;
+}
+
+.header-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,168,76,0.5);
+}
+
+.header-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--gray);
+  letter-spacing: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--gray);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 2s ease infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── NAV TABS ── */
+nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  padding: 0 40px;
+  background: rgba(5,12,26,0.8);
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  gap: 0;
+  overflow-x: auto;
+}
+
+nav::-webkit-scrollbar { display: none; }
+
+.nav-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--gray);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.nav-btn::before {
+  content: attr(data-num);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--gold-dim);
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.nav-btn:hover { color: var(--white); }
+
+.nav-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  text-shadow: 0 0 12px rgba(201,168,76,0.4);
+}
+
+/* ── CONTENT AREA ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 40px;
+  scroll-behavior: smooth;
+}
+
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active {
+  display: block;
+  animation: page-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── GLASS CARD ── */
+.glass {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.05) 0%,
+    rgba(255,255,255,0.02) 100%
+  );
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 2px;
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(201,168,76,0.04) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+.glass-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--gold);
+  border-style: solid;
+  opacity: 0.6;
+}
+.glass-corner.tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.glass-corner.tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.glass-corner.bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.glass-corner.br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+/* ── SECTION HEADER ── */
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  letter-spacing: 4px;
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.gold-line {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  margin-bottom: 30px;
+}
+
+/* ═══════════════════════════════
+   PAGE 1 – COVER
+═══════════════════════════════ */
+.cover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.cover-hero {
+  grid-column: 1 / -1;
+  padding: 60px 50px;
+  display: flex;
+  align-items: center;
+  gap: 50px;
+  min-height: 260px;
+}
+
+.cover-shield {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cover-shield svg { width: 100%; height: 100%; }
+
+.cover-text {}
+
+.cover-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px;
+  letter-spacing: 6px;
+  line-height: 0.9;
+  background: linear-gradient(180deg, var(--white) 0%, rgba(232,237,245,0.5) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cover-position {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 8px;
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(201,168,76,0.6);
+  margin-top: 6px;
+}
+
+.cover-id {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--gray);
+  margin-top: 12px;
+  letter-spacing: 3px;
+}
+
+.stat-card {
+  padding: 28px 30px;
+}
+
+.stat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: var(--white);
+  line-height: 1;
+}
+
+.stat-sub {
+  font-size: 12px;
+  color: var(--gray);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════
+   PAGE 2 – PROFIL
+═══════════════════════════════ */
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.profile-card { padding: 32px; }
+
+.data-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  gap: 20px;
+}
+
+.data-row:last-child { border-bottom: none; }
+
+.data-key {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  flex-shrink: 0;
+}
+
+.data-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+  text-align: right;
+}
+
+/* ═══════════════════════════════
+   PAGE 3 – EXPERIENCE
+═══════════════════════════════ */
+.exp-timeline {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  padding-left: 40px;
+}
+
+.exp-timeline::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--gold-dim) 10%,
+    var(--gold-dim) 90%,
+    transparent 100%
+  );
+}
+
+.server-block { margin-bottom: 50px; }
+
+.server-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  background: linear-gradient(90deg, rgba(201,168,76,0.15), transparent);
+  border-left: 3px solid var(--gold);
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.server-tag::before {
+  content: '';
+  position: absolute;
+  left: -46px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 12px rgba(201,168,76,0.8);
+}
+
+.server-tag-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--gold);
+}
+
+.server-tag-years {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--gray);
+  letter-spacing: 2px;
+}
+
+.exp-item {
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: start;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.exp-item:hover {
+  border-color: rgba(201,168,76,0.4);
+  background: linear-gradient(135deg,
+    rgba(201,168,76,0.07) 0%,
+    rgba(255,255,255,0.03) 100%
+  );
+  transform: translateX(4px);
+}
+
+.exp-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, var(--gold-dim) 0%, var(--gold) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.exp-main {}
+
+.exp-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 1px;
+}
+
+.exp-under {
+  font-size: 12px;
+  color: var(--gray);
+  margin-top: 3px;
+}
+
+.exp-under span { color: var(--gold-dim); }
+
+.exp-dur {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--gold-dim);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  background: rgba(201,168,76,0.1);
+  padding: 4px 10px;
+  border: 1px solid rgba(201,168,76,0.2);
+}
+
+/* ═══════════════════════════════
+   PAGE 4 – STRENGTHS
+═══════════════════════════════ */
+.strengths-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto 30px;
+}
+
+.strength-card {
+  padding: 28px 22px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+}
+
+.strength-card:hover {
+  border-color: rgba(201,168,76,0.5);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(201,168,76,0.1);
+}
+
+.str-icon {
+  font-size: 28px;
+  margin-bottom: 14px;
+}
+
+.str-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 17px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.str-desc {
+  font-size: 12px;
+  color: var(--gray);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════
+   PAGE 5 – MOTIVATION
+═══════════════════════════════ */
+.motivation-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.motive-block {
+  padding: 36px 40px;
+  margin-bottom: 20px;
+}
+
+.motive-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: rgba(232,237,245,0.85);
+}
+
+.motive-quote {
+  padding: 32px 40px;
+  border-left: 3px solid var(--gold);
+  background: linear-gradient(90deg, rgba(201,168,76,0.08), transparent);
+  margin: 28px 0;
+}
+
+.motive-quote p {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--white);
+  line-height: 1.4;
+}
+
+.checklist { margin-top: 24px; }
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.check-mark {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--gold);
+  font-size: 11px;
+}
+
+.check-text {
+  font-size: 14px;
+  color: rgba(232,237,245,0.8);
+  line-height: 1.5;
+}
+
+.check-text strong { color: var(--white); }
+
+/* ═══════════════════════════════
+   PAGE 6 – CONTACT
+═══════════════════════════════ */
+.contact-layout {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.contact-main { padding: 44px; }
+
+.dc-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: rgba(88,101,242,0.1);
+  border: 1px solid rgba(88,101,242,0.3);
+  border-radius: 2px;
+  margin: 24px 0;
+}
+
+.dc-icon {
+  width: 40px;
+  height: 40px;
+  background: #5865f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.dc-username {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 18px;
+  color: var(--white);
+  letter-spacing: 1px;
+}
+
+.dc-label {
+  font-size: 11px;
+  color: var(--gray);
+  margin-top: 2px;
+}
+
+.contact-panel {
+  padding: 44px;
+  background: linear-gradient(145deg,
+    rgba(201,168,76,0.08) 0%,
+    rgba(10,22,40,0.9) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.big-badge {
+  font-size: 70px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
+}
+
+.contact-tagline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.contact-body {
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.8;
+}
+
+/* ── FOOTER ── */
+footer {
+  flex-shrink: 0;
+  height: 36px;
+  background: rgba(5,12,26,0.95);
+  border-top: 1px solid rgba(201,168,76,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+}
+
+.footer-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--gray);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  header, nav, .content, footer { padding-left: 20px; padding-right: 20px; }
+  .cover-grid { grid-template-columns: 1fr; }
+  .cover-hero { flex-direction: column; padding: 36px 24px; gap: 24px; }
+  .cover-name { font-size: 48px; }
+  .strengths-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-layout, .contact-layout { grid-template-columns: 1fr; }
+  .header-right { display: none; }
+}
+
+@media (max-width: 600px) {
+  .strengths-grid { grid-template-columns: 1fr; }
+  .nav-btn { padding: 12px 14px; font-size: 10px; }
+  .cover-name { font-size: 38px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="badge-hex">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="20,2 36,11 36,29 20,38 4,29 4,11"
+            fill="none" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+          <polygon points="20,6 32,13 32,27 20,34 8,27 8,13"
+            fill="none" stroke="#c9a84c" stroke-width="0.4" opacity="0.3"/>
+        </svg>
+        <span>PD</span>
+      </div>
+      <div>
+        <div class="header-title">LOS SANTOS PD</div>
+        <div class="header-sub">BEWERBUNGSPORTAL // GESICHERT</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot"></div>
+        SYSTEM AKTIV
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gray);letter-spacing:1px;">
+        ID// 90027
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav>
+    <button class="nav-btn active" data-page="cover"       data-num="01">Übersicht</button>
+    <button class="nav-btn"        data-page="profil"      data-num="02">Profil</button>
+    <button class="nav-btn"        data-page="erfahrung"   data-num="03">Erfahrung</button>
+    <button class="nav-btn"        data-page="staerken"    data-num="04">Stärken</button>
+    <button class="nav-btn"        data-page="motivation"  data-num="05">Motivation</button>
+    <button class="nav-btn"        data-page="kontakt"     data-num="06">Kontakt</button>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- PAGE 1 – COVER -->
+    <div id="cover" class="page active">
+      <div class="cover-grid">
+
+        <div class="glass cover-hero">
+          <div class="glass-corner tl"></div>
+          <div class="glass-corner tr"></div>
+          <div class="glass-corner bl"></div>
+          <div class="glass-corner br"></div>
+
+          <div class="cover-shield">
+            <svg viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M60 4 L108 24 L108 76 C108 106 84 128 60 136 C36 128 12 106 12 76 L12 24 Z"
+                fill="rgba(201,168,76,0.08)" stroke="#c9a84c" stroke-width="1.5"/>
+              <path d="M60 14 L98 30 L98 76 C98 102 78 120 60 128 C42 120 22 102 22 76 L22 30 Z"
+                fill="rgba(201,168,76,0.05)" stroke="rgba(201,168,76,0.3)" stroke-width="0.8"/>
+              <text x="60" y="80" text-anchor="middle" font-family="'Bebas Neue',sans-serif"
+                font-size="18" fill="#c9a84c" letter-spacing="2">LSPD</text>
+              <text x="60" y="96" text-anchor="middle" font-family="'Share Tech Mono',monospace"
+                font-size="8" fill="rgba(201,168,76,0.6)">EST. 2024</text>
+              <circle cx="60" cy="52" r="14" fill="none" stroke="rgba(201,168,76,0.4)" stroke-width="1"/>
+              <text x="60" y="57" text-anchor="middle" font-size="16" fill="#c9a84c">★</text>
+            </svg>
+          </div>
+
+          <div class="cover-text">
+            <div class="section-label" style="margin-bottom:10px;">Bewerbung für die Position</div>
+            <div class="cover-name">DR. MIA<br>HELLOKITTY</div>
+            <div class="cover-position">CHIEF COORDINATOR</div>
+            <div class="cover-id">SPIELER-ID: 90027 &nbsp;|&nbsp; LSPD &nbsp;|&nbsp; AKTIV</div>
+          </div>
+        </div>
+
+        <div class="glass stat-card">
+          <div class="glass-corner tl"></div><div class="glass-corner br"></div>
+          <div class="stat-label">Aktuelle Position</div>
+          <div class="stat-value" style="font-size:22px;letter-spacing:1px;">Asst. Chief</div>
+          <div class="stat-sub">Division Untercover (DU)</div>
+        </div>
+
+        <div class="glass stat-card">
+          <div class="glass-corner tl"></div><div class="glass-corner br"></div>
+          <div class="stat-label">Gesamterfahrung</div>
+          <div class="stat-value">2–3 <span style="font-size:18px;color:var(--gray);">JAHRE</span></div>
+          <div class="stat-sub">Führungspositionen</div>
+        </div>
+
+        <div class="glass stat-card">
+          <div class="glass-corner tl"></div><div class="glass-corner br"></div>
+          <div class="stat-label">OOC Name</div>
+          <div class="stat-value" style="font-size:24px;">Alexander</div>
+          <div class="stat-sub">Alter: 15 Jahre</div>
+        </div>
+
+        <div class="glass stat-card">
+          <div class="glass-corner tl"></div><div class="glass-corner br"></div>
+          <div class="stat-label">Discord Kontakt</div>
+          <div class="stat-value" style="font-size:16px;font-family:'Share Tech Mono',monospace;">alexander_1856</div>
+          <div class="stat-sub">Verfügbar für Rückfragen</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 2 – PROFIL -->
+    <div id="profil" class="page">
+      <div class="profile-layout">
+        <div>
+          <div class="section-label">Sektion 02</div>
+          <div class="section-title">PROFIL</div>
+          <div class="gold-line"></div>
+
+          <div class="glass profile-card">
+            <div class="glass-corner tl"></div>
+            <div class="data-row"><span class="data-key">RP NAME</span><span class="data-val">Dr. Mia Hellokitty</span></div>
+            <div class="data-row"><span class="data-key">SPIELER ID</span><span class="data-val">90027</span></div>
+            <div class="data-row"><span class="data-key">OOC NAME</span><span class="data-val">Alexander</span></div>
+            <div class="data-row"><span class="data-key">OOC ALTER</span><span class="data-val">15 Jahre</span></div>
+            <div class="data-row"><span class="data-key">DEPARTMENT</span><span class="data-val">LSPD</span></div>
+            <div class="data-row"><span class="data-key">POSITION</span><span class="data-val">Asst. Chief DU</span></div>
+            <div class="data-row"><span class="data-key">STATUS</span>
+              <span class="data-val" style="color:#10b981;">● AKTIV</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label" style="opacity:0;">–</div>
+          <div class="section-title" style="opacity:0;">–</div>
+          <div class="gold-line" style="opacity:0;"></div>
+
+          <div class="glass profile-card" style="height:calc(100% - 94px);">
+            <div class="glass-corner tr"></div>
+            <div class="glass-corner bl"></div>
+            <div class="section-label" style="margin-bottom:14px;">Statement</div>
+            <p style="font-size:14px;line-height:1.85;color:rgba(232,237,245,0.8);">
+              Als erfahrene Führungsperson mit umfassendem Background in verschiedenen Divisionen
+              und Servern habe ich ein tiefes Verständnis für effektive Koordination und strukturierte
+              Teamführung entwickelt.
+            </p>
+            <p style="font-size:14px;line-height:1.85;color:rgba(232,237,245,0.8);margin-top:16px;">
+              Mein Fokus liegt auf klarer Kommunikation, professionellem Handeln unter Druck
+              und der kontinuierlichen Stärkung des Departments durch gemeinsamen Einsatz.
+            </p>
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(201,168,76,0.15);">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold-dim);">
+                BEWERBUNGSZIEL
+              </div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--gold);margin-top:6px;">
+                CHIEF COORDINATOR
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3 – ERFAHRUNG -->
+    <div id="erfahrung" class="page">
+      <div class="section-label">Sektion 03</div>
+      <div class="section-title">ERFAHRUNG</div>
+      <div class="gold-line"></div>
+
+      <div class="exp-timeline">
+
+        <div class="server-block">
+          <div class="server-tag">
+            <span class="server-tag-name">GRAND ROLEPLAY</span>
+            <span class="server-tag-years">// 3+ JAHRE GESAMT</span>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">📋</div>
+            <div class="exp-main">
+              <div class="exp-title">INF Leitung</div>
+              <div class="exp-under">Unter: <span>Leon Otiz</span> — Investigation &amp; Narcotics Force</div>
+            </div>
+            <div class="exp-dur">3 MON.</div>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">⚡</div>
+            <div class="exp-main">
+              <div class="exp-title">SOC CO-Leitung</div>
+              <div class="exp-under">Unter: <span>Chris Cruz</span> — Special Operations Command</div>
+            </div>
+            <div class="exp-dur">2 MON.</div>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">✈️</div>
+            <div class="exp-main">
+              <div class="exp-title">Air Force Leitung</div>
+              <div class="exp-under">Unter: <span>Noah / Lucie Freilich</span> — Air Support Division</div>
+            </div>
+            <div class="exp-dur">2 MON.</div>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">🔍</div>
+            <div class="exp-main">
+              <div class="exp-title">INF Leitung (2. Amtszeit)</div>
+              <div class="exp-under">Unter: <span>Bratan Bratanowitsche</span> — Verbesserte Prozesse &amp; Strukturen</div>
+            </div>
+            <div class="exp-dur">2 MON.</div>
+          </div>
+        </div>
+
+        <div class="server-block">
+          <div class="server-tag">
+            <span class="server-tag-name">MAJESTIC RP</span>
+            <span class="server-tag-years">// AKTUELLE SERVER</span>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">🎯</div>
+            <div class="exp-main">
+              <div class="exp-title">SWAT Mitglied</div>
+              <div class="exp-under">Unter: <span>Mert Cruise</span> — LSPD Special Weapons &amp; Tactics</div>
+            </div>
+            <div class="exp-dur">AKTIV</div>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">👮</div>
+            <div class="exp-main">
+              <div class="exp-title">LSPD CM Mitglied</div>
+              <div class="exp-under">Unter: <span>Lukas Ryder</span> — Community Management Division</div>
+            </div>
+            <div class="exp-dur">AKTIV</div>
+          </div>
+
+          <div class="glass exp-item">
+            <div class="exp-dot">⭐</div>
+            <div class="exp-main">
+              <div class="exp-title">SANG Asst. Sheriff &amp; Deputy Commander HR</div>
+              <div class="exp-under">Unter: <span>Toby Alvarez</span> — LSCSD Division Untercover + Human Resources</div>
+            </div>
+            <div class="exp-dur">AKTIV</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 4 – STÄRKEN -->
+    <div id="staerken" class="page">
+      <div class="section-label">Sektion 04</div>
+      <div class="section-title">STÄRKEN</div>
+      <div class="gold-line"></div>
+
+      <div class="strengths-grid">
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">🎯</div>
+          <div class="str-title">Kompetenz</div>
+          <div class="str-desc">Fachliche Exzellenz und strukturierte Prozesse. Klarheit in Entscheidungen und Prioritäten.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">💬</div>
+          <div class="str-title">Kommunikation</div>
+          <div class="str-desc">Klare Botschaften auf allen Ebenen — von Untergebenen bis zur Führungsspitze.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">🔄</div>
+          <div class="str-title">Kritikfähigkeit</div>
+          <div class="str-desc">Offenheit für Feedback. Selbstreflexion und kontinuierliche Verbesserung als Grundhaltung.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">⚡</div>
+          <div class="str-title">Lösungsorientiert</div>
+          <div class="str-desc">Pragmatische Problemlösung. Fokus auf Resultate statt Problembeschreibungen.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">👥</div>
+          <div class="str-title">Teamwork</div>
+          <div class="str-desc">Erfahrung in Führung und Motivierung von Teams zu gemeinsamer Höchstleistung.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">🧊</div>
+          <div class="str-title">Stressresistenz</div>
+          <div class="str-desc">Ruhe unter Druck. Objektives Handeln auch in kritischen und eskalierenden Situationen.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">📐</div>
+          <div class="str-title">Organisation</div>
+          <div class="str-desc">Strukturierte Arbeitsweise mit Überblick über Prozesse, Personal und Prioritäten.</div>
+        </div>
+
+        <div class="glass strength-card">
+          <div class="glass-corner tl"></div>
+          <div class="str-icon">🚀</div>
+          <div class="str-title">Weiterentwicklung</div>
+          <div class="str-desc">Intrinsische Motivation zur stetigen Verbesserung — für mich und für das Department.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5 – MOTIVATION -->
+    <div id="motivation" class="page">
+      <div class="section-label">Sektion 05</div>
+      <div class="section-title">MOTIVATION</div>
+      <div class="gold-line"></div>
+
+      <div class="motivation-wrapper">
+
+        <div class="glass motive-block">
+          <div class="glass-corner tl"></div><div class="glass-corner br"></div>
+          <div class="section-label" style="margin-bottom:12px;">Warum Chief Coordinator?</div>
+          <p class="motive-text">
+            Mein Ziel ist es, das LSPD durch strukturierte Koordination und starke Teamarbeit weiter zu stärken.
+            Mit meiner Erfahrung aus verschiedenen Führungspositionen auf mehreren Servern bringe ich ein
+            fundiertes Verständnis für die Anforderungen dieser Rolle mit — und den Willen, sie täglich
+            mit vollem Einsatz auszufüllen.
+          </p>
+
+          <div class="motive-quote">
+            <p>"Ich habe gelernt, auch in stressigen und herausfordernden Situationen die Ruhe zu bewahren und objektiv zu handeln."</p>
+          </div>
+
+          <p class="motive-text">
+            Feedback nehme ich stets offen an und arbeite kontinuierlich an mir, um sowohl persönlich
+            als auch im Team zu wachsen. Ich kann klare Entscheidungen treffen, behalte auch in hektischen
+            Momenten den Überblick und motiviere mein Team zu gemeinsamer Höchstleistung.
+          </p>
+        </div>
+
+        <div class="glass motive-block">
+          <div class="glass-corner tl"></div>
+          <div class="section-label" style="margin-bottom:16px;">Kernkompetenzen für diese Rolle</div>
+          <div class="checklist">
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Organisationstalent &amp; strukturierte Arbeitsweise</strong> — effiziente Prozesse und klare Strukturen</div>
+            </div>
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Stressresistenz &amp; ruhiges Auftreten</strong> — Stabilität und Verlässlichkeit in jeder Situation</div>
+            </div>
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Kritikfähigkeit &amp; Offenheit für Feedback</strong> — kontinuierliche Selbstverbesserung</div>
+            </div>
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Teamfähigkeit &amp; Führungserfahrung</strong> — mehrjährige Leitung von Divisionen und Einheiten</div>
+            </div>
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Kommunikationsstärke</strong> — klare Informationsvermittlung auf allen Ebenen</div>
+            </div>
+            <div class="check-item">
+              <div class="check-mark">✓</div>
+              <div class="check-text"><strong>Motivation zur Weiterentwicklung</strong> — persönlich und für das gesamte LSPD</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 6 – KONTAKT -->
+    <div id="kontakt" class="page">
+      <div class="section-label">Sektion 06</div>
+      <div class="section-title">KONTAKT</div>
+      <div class="gold-line"></div>
+
+      <div class="contact-layout">
+
+        <div class="glass contact-main">
+          <div class="glass-corner tl"></div>
+          <div class="section-label" style="margin-bottom:16px;">Bewerbungsdaten</div>
+
+          <div class="data-row"><span class="data-key">RP NAME</span><span class="data-val">Dr. Mia Hellokitty</span></div>
+          <div class="data-row"><span class="data-key">SPIELER ID</span><span class="data-val">90027</span></div>
+          <div class="data-row"><span class="data-key">POSITION</span><span class="data-val">Asst. Chief DU</span></div>
+          <div class="data-row"><span class="data-key">SERVER</span><span class="data-val">Majestic RP</span></div>
+
+          <div class="dc-display">
+            <div class="dc-icon">💬</div>
+            <div>
+              <div class="dc-username">alexander_1856</div>
+              <div class="dc-label">Discord — Primärer Kontaktweg</div>
+            </div>
+          </div>
+
+          <p style="font-size:12px;color:var(--gray);line-height:1.7;margin-top:8px;">
+            Für alle Rückfragen zur Bewerbung stehe ich auf Discord jederzeit zur Verfügung.
+            Ich freue mich auf ein persönliches Gespräch.
+          </p>
+        </div>
+
+        <div class="glass contact-panel">
+          <div class="glass-corner tr"></div>
+          <div class="glass-corner bl"></div>
+          <div class="big-badge">👮</div>
+          <div class="contact-tagline">BEREIT FÜR DEN NÄCHSTEN SCHRITT</div>
+          <div class="contact-body">
+            Chief Coordinator<br>
+            Los Santos Police Department<br><br>
+            <span style="color:var(--gold-dim);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;">
+              ID: 90027 // AKTIV
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <footer>
+    <div class="footer-text">LSPD // BEWERBUNGSPORTAL // VERTRAULICH</div>
+    <div class="footer-text">DR. MIA HELLOKITTY // ID 90027 // © 2025</div>
+  </footer>
+
+</div><!-- end app -->
+
+<script>
+/* ── PARTICLE CANVAS ── */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const GOLD = 'rgba(201,168,76,';
+const BLUE = 'rgba(26,64,128,';
+
+const particles = Array.from({length: 60}, () => ({
+  x: Math.random() * window.innerWidth,
+  y: Math.random() * window.innerHeight,
+  vx: (Math.random() - 0.5) * 0.3,
+  vy: (Math.random() - 0.5) * 0.3,
+  r: Math.random() * 1.4 + 0.3,
+  alpha: Math.random() * 0.5 + 0.1,
+  color: Math.random() > 0.5 ? GOLD : BLUE
+}));
+
+function drawLines() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        const alpha = (1 - dist/120) * 0.12;
+        ctx.strokeStyle = `rgba(201,168,76,${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // deep bg gradient
+  const grad = ctx.createRadialGradient(
+    canvas.width*0.5, canvas.height*0.3, 0,
+    canvas.width*0.5, canvas.height*0.3, canvas.width*0.8
+  );
+  grad.addColorStop(0, 'rgba(10,22,40,1)');
+  grad.addColorStop(1, 'rgba(5,12,26,1)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawLines();
+
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = p.color + p.alpha + ')';
+    ctx.fill();
+  });
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ── NAVIGATION ── */
+const btns = document.querySelectorAll('.nav-btn');
+const pages = document.querySelectorAll('.page');
+
+btns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-page');
+    btns.forEach(b => b.classList.remove('active'));
+    pages.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    document.getElementById('content').scrollTop = 0;
+  });
+});
+
+/* Keyboard nav */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const all = Array.from(btns);
+  const cur = all.findIndex(b => b.classList.contains('active'));
+  const next = e.key === 'ArrowRight'
+    ? (cur + 1) % all.length
+    : (cur - 1 + all.length) % all.length;
+  all[next].click();
+});
+</script>
+</body>
+</html>
